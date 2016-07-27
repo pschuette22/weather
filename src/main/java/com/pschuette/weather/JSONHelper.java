@@ -33,6 +33,10 @@ public class JSONHelper {
 		this.url = url;
 		this.jReq = new JSONObject();
 	}
+	
+	public void setTestJson(String json){
+		this.jResp = new JSONObject(json);
+	}
 
 	public void putRequestParam(String key, String value) throws JSONException {
 		this.jReq.put(key, value);
@@ -48,6 +52,7 @@ public class JSONHelper {
 	public boolean doGet() throws IOException, JSONException {
 
 		// [START example]
+		System.out.println("URL: " + this.url);
 	    URL url = new URL(this.url);
 	    BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 	    StringBuffer json = new StringBuffer();
