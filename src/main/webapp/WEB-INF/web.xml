@@ -13,6 +13,14 @@
 		<servlet-name>weather</servlet-name>
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
+	<servlet>
+		<servlet-name>history</servlet-name>
+		<servlet-class>com.pschuette.weather.HistoryServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>history</servlet-name>
+		<url-pattern>/history</url-pattern>
+	</servlet-mapping>
 
 	<!-- Servlet fetching location conditions-->
 	<servlet>
@@ -26,6 +34,7 @@
 
 	<welcome-file-list>
 		<welcome-file>weather.jsp</welcome-file>
+		<welcome-file>history.jsp</welcome-file>
 	</welcome-file-list>
 
 	<!-- Filters and listeners needed for objectify -->

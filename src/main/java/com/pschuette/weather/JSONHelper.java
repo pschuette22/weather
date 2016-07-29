@@ -33,10 +33,6 @@ public class JSONHelper {
 		this.url = url;
 		this.jReq = new JSONObject();
 	}
-	
-	public void setTestJson(String json){
-		this.jResp = new JSONObject(json);
-	}
 
 	public void putRequestParam(String key, String value) throws JSONException {
 		this.jReq.put(key, value);

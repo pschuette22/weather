@@ -57,6 +57,117 @@ body {
 	-webkit-text-size-adjust: none;
 }
 
+/* Pete Schuette CSS for Weather App */
+.inline-items-container {
+	display: inline-block;
+	width: 100%;
+	overflow-x: auto;
+	white-space: nowrap;
+}
+
+.dayofweek {
+	text-align: center;
+	width: 13%;
+	min-width: 90px;
+	margin-left: 3px;
+	margin-right: 3px;
+	float: left;
+}
+
+.historyitem {
+	text-align: center;
+	width: 30%;
+	margin-left: 3px;
+	margin-right: 3px;
+	float: left;
+}
+
+#loader {
+  position: relative;
+  left: 50%;
+  top: 100px;
+  z-index: 1;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+
+#map {
+	height: 100%;
+	min-height: 300px;
+	width: 100%
+}
+
+.controls {
+	margin-top: 10px;
+	border: 1px solid transparent;
+	border-radius: 2px 0 0 2px;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	height: 32px;
+	outline: none;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#pac-input {
+	background-color: #fff;
+	font-family: Roboto;
+	font-size: 15px;
+	font-weight: 300;
+	margin-left: 12px;
+	padding: 0 11px 0 13px;
+	text-overflow: ellipsis;
+	width: 300px;
+}
+
+#pac-input:focus {
+	border-color: #4d90fe;
+}
+
+.pac-container {
+	font-family: Roboto;
+}
+
+#type-selector {
+	color: #fff;
+	background-color: #4d90fe;
+	padding: 5px 11px 0px 11px;
+}
+
+#type-selector label {
+	font-family: Roboto;
+	font-size: 13px;
+	font-weight: 300;
+}
+
+#target {
+	width: 345px;
+}
+
 /* Box Model */
 *, *:before, *:after {
 	-moz-box-sizing: border-box;
@@ -1062,7 +1173,6 @@ header>p {
 	width: auto;
 }
 
-
 /* Button */
 input[type="button"], input[type="submit"], input[type="reset"], button,
 	.button {
@@ -1428,7 +1538,6 @@ table.default thead {
 	max-height: 80px;
 	max-width: 80px;
 }
-
 
 .icon>.label {
 	display: none;

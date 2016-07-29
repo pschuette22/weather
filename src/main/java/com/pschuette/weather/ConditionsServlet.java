@@ -1,5 +1,7 @@
 package com.pschuette.weather;
 
+import static com.googlecode.objectify.ObjectifyService.ofy;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,14 +12,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.google.appengine.api.users.User;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
+import com.pschuette.weather.data.Search;
 
 @SuppressWarnings("serial")
 public class ConditionsServlet extends HttpServlet {
 
 	private static final String SUPPORTED_ORIGINS = "*";
 	private static final String SUPPORTED_METHODS = "GET, OPTIONS";
-	private static final long YEAR_IN_MILLIS = 365 * 24 * 60 * 60 * 1000;
+	private static final long YEAR_IN_MILLIS = 365L * 24 * 60 * 60 *1000;
 	private static final int YEARS_IN_HISTORY = 10;
 
 	@Override
@@ -35,7 +43,6 @@ public class ConditionsServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-		
 		// Make sure the proper params were sent
 		String sLat = req.getParameter("lat");
 		String sLng = req.getParameter("lng");
@@ -48,7 +55,7 @@ public class ConditionsServlet extends HttpServlet {
 			JSONHelper helper = new JSONHelper(
 					"https://api.forecast.io/forecast/def176538956da1b9adcf3bc55749d0f/" + sLat + "," + sLng);
 			helper.doGet();
-//			helper.setTestJson(testJson);
+			// helper.setTestJson(testJson);
 			// Print for curiosity
 			System.out.println(helper.getJsonResponse().toString());
 
@@ -60,7 +67,7 @@ public class ConditionsServlet extends HttpServlet {
 			jsonRespCurrent.put("precipProbability", jCurrent.getDouble("precipProbability"));
 			jsonRespCurrent.put("temperature", jCurrent.getInt("temperature"));
 			jsonRespCurrent.put("humidity", jCurrent.getDouble("humidity"));
-			jsonRespCurrent.put("wind", jCurrent.getDouble("humidity"));
+			jsonRespCurrent.put("wind", jCurrent.getDouble("windSpeed"));
 			jsonRespCurrent.put("cloudCover", jCurrent.get("cloudCover"));
 
 			// Add the currently response object
@@ -72,7 +79,7 @@ public class ConditionsServlet extends HttpServlet {
 			for (int i = 0; i < 8; i++) {
 				JSONObject hObj = (JSONObject) jHourly.get(i);
 				JSONObject jsonRespHour = new JSONObject();
-				jsonRespHour.put("time", hObj.getLong("time"));
+				jsonRespHour.put("time", hObj.getLong("time")*1000);
 				jsonRespHour.put("temperature", hObj.getDouble("temperature"));
 				jsonRespHour.put("precipProbability", hObj.getDouble("precipProbability"));
 				jsonRespHourly.put(i, jsonRespHour);
@@ -86,57 +93,93 @@ public class ConditionsServlet extends HttpServlet {
 			for (int i = 0; i < 7; i++) {
 				JSONObject dObj = (JSONObject) jDaily.get(i);
 				JSONObject jsonRespDay = new JSONObject();
-				jsonRespDay.put("icon", dObj.getString("icon"));
-				jsonRespDay.put("temperatureMin", dObj.getDouble("temperatureMin"));
-				jsonRespDay.put("temperatureMax", dObj.getDouble("temperatureMax"));
-				jsonRespDay.put("precipProbability", dObj.getDouble("precipProbability"));
+				jsonRespDay.put("time", dObj.getLong("time")*1000);
+				jsonRespDay.put("icon", dObj.getString("icon"));				
+				jsonRespDay.put("tempMin", dObj.getDouble("temperatureMin"));
+				jsonRespDay.put("tempMax", dObj.getDouble("temperatureMax"));
 				jsonRespDaily.put(i, jsonRespDay);
 			}
 			jsonResp.put("daily", jsonRespDaily);
 
-//			// Build historic conditions
-//			long time = System.currentTimeMillis();
-//			double avgTemp = 0.0;
-//			double avgHumidity = 0.0;
-//			double avgCloudCover = 0.0;
-//			Map<String, Integer> weather = new HashMap<String, Integer>();
-//			for (int i = 0; i < YEARS_IN_HISTORY; i++) {
-//				time -= YEAR_IN_MILLIS;
-//				helper = new JSONHelper("https://api.forecast.io/forecast/def176538956da1b9adcf3bc55749d0f/" + sLat
-//						+ "," + sLng + "," + Utils.darkSkyTimeFormat(time));
-//				helper.doGet();
-//				System.out.println("HISTORY: " + helper.getJsonResponse().toString());
-//				JSONObject json = helper.getJSONObject("currently");
-//				avgTemp += json.getDouble("temperature");
-//				avgHumidity += json.getDouble("humidity");
-//				avgCloudCover += json.getDouble("cloudCover");
-//				String icon = json.getString("icon");
-//				if (weather.containsKey(icon)) {
-//					weather.put(icon, weather.get(icon) + 1);
-//				} else {
-//					weather.put(icon, Integer.valueOf(1));
-//				}
-//			}
-//			avgTemp /= YEARS_IN_HISTORY;
-//			avgHumidity /= YEARS_IN_HISTORY;
-//			avgCloudCover /= YEARS_IN_HISTORY;
-//
-//			JSONArray jsonIconArr = new JSONArray();
-//			for (String key : weather.keySet()) {
-//				JSONObject iconObj = new JSONObject();
-//				iconObj.put("icon", key);
-//				iconObj.put("count", weather.get(key));
-//				jsonIconArr.put(iconObj);
-//			}
-//
-//			JSONObject jsonRespHistory = new JSONObject();
-//			jsonRespHistory.put("avgTemp", avgTemp);
-//			jsonRespHistory.put("avgHumidity", avgHumidity);
-//			jsonRespHistory.put("avgCloudCover", avgCloudCover);
-//			jsonRespHistory.put("iconCounts", jsonIconArr);
-//
-//			jsonResp.put("history", jsonRespHistory);
+			// Build historic conditions
+			long time = System.currentTimeMillis();
+			double avgTemp = 0.0;
+			double avgTempCount = 0;
+			double avgHumidity = 0.0;
+			double avgHumidityCount = 0;
+			double avgCloudCover = 0.0;
+			double avgCloudCoverCount = 0;
 
+			Map<String, Integer> weather = new HashMap<String, Integer>();
+			for (int i = 0; i < YEARS_IN_HISTORY; i++) {
+				time -= YEAR_IN_MILLIS;
+				// multiply seconds by 1000 because darksky returns time in seconds not millis
+				helper = new JSONHelper("https://api.forecast.io/forecast/def176538956da1b9adcf3bc55749d0f/" + sLat
+						+ "," + sLng + "," + Utils.darkSkyTimeFormat(time));
+				helper.doGet();
+				System.out.println("HISTORY: " + helper.getJsonResponse().toString());
+				JSONObject json = helper.getJSONObject("currently");
+				// Catches because historic data isn't as reliable
+				try {
+					avgTemp += json.getDouble("temperature");
+					avgTempCount++;
+				} catch (JSONException e) {
+					// Potentially missing from past data
+				}
+				try {
+					avgHumidity += json.getDouble("humidity");
+					avgHumidityCount++;
+				} catch (JSONException e) {
+					// Potentially missing from past data
+				}
+				try {
+					avgCloudCover += json.getDouble("cloudCover");
+					avgCloudCoverCount++;
+				} catch (JSONException e) {
+					// Potentially missing from past data
+				}
+				// Build the map of counting icons for a given day in history
+				// If the icon is already in the map, increment the count
+				// if not, set the count for that icon to 1
+				String icon = json.getString("icon");
+				if (weather.containsKey(icon)) {
+					weather.put(icon, weather.get(icon) + 1);
+				} else {
+					weather.put(icon, Integer.valueOf(1));
+				}
+			}
+			// Take the averages considering potential errors in counts
+			avgTemp /= avgTempCount;
+			avgHumidity /= avgHumidityCount;
+			avgCloudCover /= avgCloudCoverCount;
+
+			// Build the icon count json array
+			JSONArray jsonIconArr = new JSONArray();
+			for (String key : weather.keySet()) {
+				JSONObject iconObj = new JSONObject();
+				iconObj.put("icon", key);
+				iconObj.put("count", weather.get(key));
+				jsonIconArr.put(iconObj);
+			}
+			
+			// Build portion of JSON response object with history info
+			JSONObject jsonRespHistory = new JSONObject();
+			jsonRespHistory.put("avgTemp", avgTemp);
+			jsonRespHistory.put("avgHumidity", avgHumidity);
+			jsonRespHistory.put("avgCloudCover", avgCloudCover);
+			jsonRespHistory.put("iconCounts", jsonIconArr);
+
+			jsonResp.put("history", jsonRespHistory);
+
+			// If the user is logged in, store the search in history
+			UserService userService = UserServiceFactory.getUserService();
+			User user = userService.getCurrentUser();
+			String place = req.getParameter("place");
+			if(user != null && Utils.isWebSafe(place)){
+				Search search = new Search(user.getEmail(), place, Double.valueOf(sLat), Double.valueOf(sLng));
+				ofy().save().entity(search).now();
+			}
+			
 			// If there was an email attached, save the search history
 			resp.getWriter().write(jsonResp.toString());
 			resp.setStatus(HttpServletResponse.SC_OK);
